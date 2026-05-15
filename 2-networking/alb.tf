@@ -20,14 +20,6 @@ resource "aws_lb_target_group" "app" {
   tags = merge(var.tags, { Name = "2-tg" })
 }
 
-# Target Group Attachment (Links EC2 servers to the Target Group)
-resource "aws_lb_target_group_attachment" "app" {
-  count            = 2
-  target_group_arn = aws_lb_target_group.app.arn
-  target_id        = aws_instance.app[count.index].id
-  port             = 80
-}
-
 # ALB Listener (Tells the ALB to listen on Port 80 and forward traffic to the Target Group)
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.main.arn
