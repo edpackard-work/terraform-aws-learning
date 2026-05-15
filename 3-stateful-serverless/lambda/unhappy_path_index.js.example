@@ -1,0 +1,39 @@
+const { DynamoDBClient, PutItemCommand, ScanCommand } = require("@aws-sdk/client-dynamodb");
+const crypto = require("crypto");
+
+const client = new DynamoDBClient({});
+
+exports.handler = async (event) => {
+  const id = crypto.randomUUID();
+
+  try {
+    // 🚨 Attempting to read a table we don't own
+    console.log("Attempting to read unauthorised table...");
+    await client.send(new ScanCommand({ TableName: "TopSecretUsersTable" }));
+
+    // ... The rest of the original index.js code (this will never execute)
+    const params = {
+      TableName: "3-serverless-table",
+      Item: {
+        id: { S: id },
+        timestamp: { S: new Date().toISOString() }
+      }
+    };
+    await client.send(new PutItemCommand(params));
+    
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "Successfully inserted item!", id: id }),
+    };
+  } catch (error) {
+    // This will catch IAM AccessDeniedException and print it to CloudWatch
+    console.error("CRITICAL ERROR:", error.name, error.message);
+    
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Could not execute function. Check logs." }),
+    };
+  }
+};
